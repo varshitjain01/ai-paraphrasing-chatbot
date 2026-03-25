@@ -1,65 +1,451 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Paraphrasing Chatbot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParaBot — AI Paraphrasing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0d0d0f;
+            --surface: #16161a;
+            --surface2: #1e1e24;
+            --border: #2a2a33;
+            --accent: #7c6aff;
+            --accent-glow: rgba(124, 106, 255, 0.25);
+            --accent2: #ff6a9b;
+            --text: #e8e8f0;
+            --text-dim: #6e6e88;
+            --user-bubble: #1a1a2e;
+            --bot-bubble: #12121f;
+            --formal: #4fc3f7;
+            --casual: #ff8a65;
+            --neutral: #a5d6a7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: Arial;
-            background: #f0f2f5;
-            text-align: center;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
         }
 
-        .chatbox {
-            width: 60%;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            height: 400px;
+        /* Ambient background blobs */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(124,106,255,0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -200px; right: -200px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(255,106,155,0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ── */
+        header {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px 24px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .logo h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, var(--text) 0%, var(--text-dim) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+            margin-left: 52px;
+            font-weight: 300;
+        }
+
+        /* ── Main container ── */
+        main {
+            width: 100%;
+            max-width: 800px;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ── Chat window ── */
+        .chat-window {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            min-height: 340px;
+            max-height: 420px;
             overflow-y: auto;
-            text-align: left;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
         }
 
-        .user {
-            color: blue;
-            margin: 10px 0;
+        .chat-window::-webkit-scrollbar { width: 4px; }
+        .chat-window::-webkit-scrollbar-track { background: transparent; }
+        .chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 10px;
+            color: var(--text-dim);
+            padding: 40px 0;
         }
 
-        .bot {
-            color: green;
-            margin: 10px 0;
+        .empty-state .icon {
+            font-size: 2.5rem;
+            opacity: 0.4;
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        /* Message bubbles */
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: fadeUp 0.3s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user { align-items: flex-end; }
+        .message.bot  { align-items: flex-start; }
+
+        .msg-label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .message.user .msg-label { color: var(--accent); }
+        .message.bot  .msg-label { color: var(--accent2); }
+
+        .bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 0.93rem;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .message.user .bubble {
+            background: var(--user-bubble);
+            border: 1px solid rgba(124,106,255,0.2);
+            border-bottom-right-radius: 4px;
+            color: var(--text);
+        }
+
+        .message.bot .bubble {
+            background: var(--bot-bubble);
+            border: 1px solid rgba(255,106,155,0.15);
+            border-bottom-left-radius: 4px;
+            color: var(--text);
+        }
+
+        .tone-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 6px;
+        }
+
+        .tone-badge.formal  { background: rgba(79,195,247,0.12); color: var(--formal); border: 1px solid rgba(79,195,247,0.2); }
+        .tone-badge.casual  { background: rgba(255,138,101,0.12); color: var(--casual); border: 1px solid rgba(255,138,101,0.2); }
+        .tone-badge.neutral { background: rgba(165,214,167,0.12); color: var(--neutral); border: 1px solid rgba(165,214,167,0.2); }
+
+        /* ── Input area ── */
+        .input-area {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .input-area:focus-within {
+            border-color: rgba(124,106,255,0.4);
+            box-shadow: 0 0 0 3px rgba(124,106,255,0.06);
         }
 
         textarea {
-            width: 60%;
-            height: 80px;
-            margin-top: 10px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.65;
+            resize: none;
+            width: 100%;
+            min-height: 72px;
+            placeholder-color: var(--text-dim);
         }
 
-        button {
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
+        textarea::placeholder { color: var(--text-dim); }
+
+        /* ── Tone + Submit row ── */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tone-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tone-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .tone-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+        .tone-btn.active-formal  { background: rgba(79,195,247,0.1);  border-color: var(--formal);  color: var(--formal); }
+        .tone-btn.active-casual  { background: rgba(255,138,101,0.1); border-color: var(--casual);  color: var(--casual); }
+        .tone-btn.active-neutral { background: rgba(165,214,167,0.1); border-color: var(--neutral); color: var(--neutral); }
+
+        .tone-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+        }
+        .tone-btn.active-formal  .tone-dot { background: var(--formal); }
+        .tone-btn.active-casual  .tone-dot { background: var(--casual); }
+        .tone-btn.active-neutral .tone-dot { background: var(--neutral); }
+        .tone-btn:not([class*="active"]) .tone-dot { background: var(--text-dim); }
+
+        .submit-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, var(--accent), #9b6aff);
             border: none;
-            margin-top: 10px;
+            border-radius: 30px;
+            color: white;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(124,106,255,0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(124,106,255,0.45);
+        }
+
+        .submit-btn:active { transform: translateY(0); }
+
+        .submit-btn svg { width: 14px; height: 14px; }
+
+        /* Hidden input */
+        input[type="hidden"] { display: none; }
+
+        /* ── Footer ── */
+        footer {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            padding: 12px 24px 32px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            opacity: 0.5;
         }
     </style>
 </head>
 <body>
 
-<h2>AI Paraphrasing Chatbot</h2>
+<header>
+    <div class="logo">
+        <div class="logo-icon">✦</div>
+        <h1>ParaBot</h1>
+    </div>
+    <p class="tagline">Intelligent paraphrasing with tone control</p>
+</header>
 
-<div class="chatbox">
-    {% if user_text %}
-        <div class="user"><b>You:</b> {{ user_text }}</div>
-        <div class="bot"><b>Bot:</b> {{ result }}</div>
-    {% endif %}
-</div>
+<main>
+    <!-- Chat window -->
+    <div class="chat-window" id="chatWindow">
+        {% if user_text %}
+            <div class="message user">
+                <span class="msg-label">You</span>
+                <div class="bubble">{{ user_text }}</div>
+            </div>
+            <div class="message bot">
+                <span class="msg-label">ParaBot</span>
+                <div class="bubble">{{ result }}</div>
+                <span class="tone-badge {{ tone }}">
+                    {% if tone == 'formal' %}🎩{% elif tone == 'casual' %}😎{% else %}⚖️{% endif %}
+                    {{ tone | capitalize }} tone
+                </span>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="icon">✦</div>
+                <p>Type something below and ParaBot will rephrase it for you.</p>
+            </div>
+        {% endif %}
+    </div>
 
-<form method="POST">
-    <textarea name="text" placeholder="Enter your sentence..."></textarea><br>
-    <button type="submit">Rewrite</button>
-</form>
+    <!-- Input area -->
+    <form method="POST" id="paraForm">
+        <div class="input-area">
+            <textarea
+                name="text"
+                id="textInput"
+                placeholder="Enter a sentence or paragraph to paraphrase…"
+                rows="3"
+            >{{ user_text if user_text else '' }}</textarea>
+
+            <div class="controls-row">
+                <!-- Tone selector -->
+                <div class="tone-selector">
+                    <button type="button" class="tone-btn {% if tone == 'neutral' %}active-neutral{% endif %}" onclick="setTone('neutral')">
+                        <span class="tone-dot"></span> Neutral
+                    </button>
+                    <button type="button" class="tone-btn {% if tone == 'formal' %}active-formal{% endif %}" onclick="setTone('formal')">
+                        <span class="tone-dot"></span> Formal
+                    </button>
+                    <button type="button" class="tone-btn {% if tone == 'casual' %}active-casual{% endif %}" onclick="setTone('casual')">
+                        <span class="tone-dot"></span> Casual
+                    </button>
+                </div>
+
+                <!-- Hidden tone input -->
+                <input type="hidden" name="tone" id="toneInput" value="{{ tone }}">
+
+                <!-- Submit -->
+                <button type="submit" class="submit-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                    </svg>
+                    Rewrite
+                </button>
+            </div>
+        </div>
+    </form>
+</main>
+
+<footer>Powered by NLTK · WordNet · Flask</footer>
+
+<script>
+    // Tone selection
+    function setTone(tone) {
+        document.getElementById('toneInput').value = tone;
+        const buttons = document.querySelectorAll('.tone-btn');
+        buttons.forEach(btn => {
+            btn.className = 'tone-btn';
+        });
+        const active = event.currentTarget;
+        active.classList.add(`active-${tone}`);
+    }
+
+    // Auto scroll chat to bottom
+    const chatWindow = document.getElementById('chatWindow');
+    if (chatWindow) {
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // Textarea auto-resize
+    const textarea = document.getElementById('textInput');
+    textarea.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+
+    // Submit with Ctrl+Enter
+    textarea.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            document.getElementById('paraForm').submit();
+        }
+    });
+</script>
 
 </body>
 </html>
