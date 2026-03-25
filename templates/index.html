@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ParaBot — AI Paraphrasing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <title>NLP Lab — AI Text Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d0d0f;
-            --surface: #16161a;
-            --surface2: #1e1e24;
-            --border: #2a2a33;
-            --accent: #7c6aff;
-            --accent-glow: rgba(124, 106, 255, 0.25);
-            --accent2: #ff6a9b;
-            --text: #e8e8f0;
-            --text-dim: #6e6e88;
-            --user-bubble: #1a1a2e;
-            --bot-bubble: #12121f;
-            --formal: #4fc3f7;
-            --casual: #ff8a65;
-            --neutral: #a5d6a7;
+            --bg:        #09090c;
+            --surface:   #111116;
+            --surface2:  #18181f;
+            --border:    #25252f;
+            --accent:    #7c6aff;
+            --accent2:   #ff6a9b;
+            --teal:      #2dd4bf;
+            --amber:     #fbbf24;
+            --green:     #4ade80;
+            --text:      #e2e2ee;
+            --text-dim:  #5a5a72;
+            --text-mid:  #9090aa;
+            --radius:    16px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,422 +29,629 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
         }
 
-        /* Ambient background blobs */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -200px; left: -200px;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(124,106,255,0.08) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+        .blob {
+            position: fixed; border-radius: 50%;
+            pointer-events: none; z-index: 0;
+            filter: blur(80px); opacity: 0.07;
         }
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -200px; right: -200px;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(255,106,155,0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
+        .blob-1 { width:500px; height:500px; background:#7c6aff; top:-150px; left:-150px; }
+        .blob-2 { width:400px; height:400px; background:#ff6a9b; bottom:-100px; right:-100px; }
+        .blob-3 { width:300px; height:300px; background:#2dd4bf; top:40%; left:60%; }
 
-        /* ── Header ── */
         header {
-            width: 100%;
-            max-width: 800px;
-            padding: 40px 24px 0;
-            position: relative;
-            z-index: 1;
+            position: relative; z-index: 2;
+            padding: 28px 40px 0;
+            display: flex; align-items: flex-end; gap: 16px;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
-        }
-
-        .logo-icon {
-            width: 40px; height: 40px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 12px;
+        .logo-mark {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+            border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 0 20px var(--accent-glow);
+            font-size: 20px;
+            box-shadow: 0 0 32px rgba(124,106,255,0.35);
         }
 
-        .logo h1 {
+        .logo-text h1 {
             font-family: 'Syne', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(90deg, var(--text) 0%, var(--text-dim) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 1.4rem; font-weight: 800;
+            letter-spacing: -0.5px; line-height: 1;
         }
 
-        .tagline {
-            font-size: 0.78rem;
-            color: var(--text-dim);
-            letter-spacing: 0.5px;
-            margin-left: 52px;
-            font-weight: 300;
+        .logo-text p {
+            font-size: 0.72rem; color: var(--text-dim);
+            letter-spacing: 1px; text-transform: uppercase; margin-top: 2px;
         }
 
-        /* ── Main container ── */
-        main {
-            width: 100%;
-            max-width: 800px;
-            padding: 24px;
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+        .layout {
+            position: relative; z-index: 2;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 20px;
+            padding: 24px 40px;
+            max-width: 1100px;
+            width: 100%; margin: 0 auto;
+            align-items: start;
         }
 
-        /* ── Chat window ── */
-        .chat-window {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            min-height: 340px;
-            max-height: 420px;
-            overflow-y: auto;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            scroll-behavior: smooth;
+        .sidebar {
+            display: flex; flex-direction: column; gap: 6px;
+            position: sticky; top: 24px;
         }
 
-        .chat-window::-webkit-scrollbar { width: 4px; }
-        .chat-window::-webkit-scrollbar-track { background: transparent; }
-        .chat-window::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        /* Empty state */
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            gap: 10px;
-            color: var(--text-dim);
-            padding: 40px 0;
+        .sidebar-label {
+            font-size: 0.65rem; font-weight: 600;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--text-dim); padding: 0 12px; margin-bottom: 4px;
         }
 
-        .empty-state .icon {
-            font-size: 2.5rem;
-            opacity: 0.4;
+        .tab-btn {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; border-radius: 12px;
+            border: 1px solid transparent; background: transparent;
+            color: var(--text-mid);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem; font-weight: 400;
+            cursor: pointer; transition: all 0.18s;
+            text-align: left; width: 100%;
         }
 
-        .empty-state p {
-            font-size: 0.85rem;
-            font-style: italic;
+        .tab-btn:hover { background: var(--surface2); color: var(--text); }
+
+        .tab-btn.active {
+            background: var(--surface2); border-color: var(--border);
+            color: var(--text); font-weight: 500;
         }
 
-        /* Message bubbles */
-        .message {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            animation: fadeUp 0.3s ease;
+        .tab-icon {
+            width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0;
         }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+        .tab-btn[data-tab="paraphrase"] .tab-icon { background: rgba(124,106,255,0.15); }
+        .tab-btn[data-tab="sentiment"]  .tab-icon { background: rgba(251,191,36,0.15); }
+        .tab-btn[data-tab="features"]   .tab-icon { background: rgba(45,212,191,0.15); }
+        .tab-btn[data-tab="ner"]        .tab-icon { background: rgba(255,106,155,0.15); }
+        .tab-btn[data-tab="topics"]     .tab-icon { background: rgba(74,222,128,0.15); }
 
-        .message.user { align-items: flex-end; }
-        .message.bot  { align-items: flex-start; }
+        .tab-btn.active[data-tab="paraphrase"] { border-color: rgba(124,106,255,0.3); }
+        .tab-btn.active[data-tab="sentiment"]  { border-color: rgba(251,191,36,0.3); }
+        .tab-btn.active[data-tab="features"]   { border-color: rgba(45,212,191,0.3); }
+        .tab-btn.active[data-tab="ner"]        { border-color: rgba(255,106,155,0.3); }
+        .tab-btn.active[data-tab="topics"]     { border-color: rgba(74,222,128,0.3); }
 
-        .msg-label {
-            font-size: 0.7rem;
-            font-weight: 500;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-        }
+        .panel { display: flex; flex-direction: column; gap: 16px; }
 
-        .message.user .msg-label { color: var(--accent); }
-        .message.bot  .msg-label { color: var(--accent2); }
-
-        .bubble {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 16px;
-            font-size: 0.93rem;
-            line-height: 1.6;
-            font-weight: 400;
-        }
-
-        .message.user .bubble {
-            background: var(--user-bubble);
-            border: 1px solid rgba(124,106,255,0.2);
-            border-bottom-right-radius: 4px;
-            color: var(--text);
-        }
-
-        .message.bot .bubble {
-            background: var(--bot-bubble);
-            border: 1px solid rgba(255,106,155,0.15);
-            border-bottom-left-radius: 4px;
-            color: var(--text);
-        }
-
-        .tone-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.68rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-top: 6px;
-        }
-
-        .tone-badge.formal  { background: rgba(79,195,247,0.12); color: var(--formal); border: 1px solid rgba(79,195,247,0.2); }
-        .tone-badge.casual  { background: rgba(255,138,101,0.12); color: var(--casual); border: 1px solid rgba(255,138,101,0.2); }
-        .tone-badge.neutral { background: rgba(165,214,167,0.12); color: var(--neutral); border: 1px solid rgba(165,214,167,0.2); }
-
-        /* ── Input area ── */
-        .input-area {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+        .input-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 20px;
+            display: flex; flex-direction: column; gap: 14px;
             transition: border-color 0.2s;
         }
 
-        .input-area:focus-within {
-            border-color: rgba(124,106,255,0.4);
-            box-shadow: 0 0 0 3px rgba(124,106,255,0.06);
+        .input-card:focus-within {
+            border-color: rgba(124,106,255,0.35);
+            box-shadow: 0 0 0 3px rgba(124,106,255,0.05);
         }
 
+        .input-header {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .input-label {
+            font-size: 0.7rem; font-weight: 600;
+            letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim);
+        }
+
+        .char-count { font-size: 0.7rem; color: var(--text-dim); }
+
         textarea {
-            background: transparent;
-            border: none;
-            outline: none;
+            background: transparent; border: none; outline: none;
             color: var(--text);
             font-family: 'DM Sans', sans-serif;
-            font-size: 0.95rem;
-            line-height: 1.65;
-            resize: none;
-            width: 100%;
-            min-height: 72px;
-            placeholder-color: var(--text-dim);
+            font-size: 0.93rem; line-height: 1.7;
+            resize: none; width: 100%; min-height: 90px;
         }
 
         textarea::placeholder { color: var(--text-dim); }
 
-        /* ── Tone + Submit row ── */
-        .controls-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
+        .input-footer {
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 12px; flex-wrap: wrap;
         }
 
-        .tone-selector {
-            display: flex;
-            gap: 8px;
-        }
+        .tone-row { display: flex; gap: 6px; }
 
-        .tone-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            border-radius: 30px;
-            border: 1px solid var(--border);
-            background: transparent;
+        .tone-chip {
+            padding: 5px 12px; border-radius: 20px;
+            border: 1px solid var(--border); background: transparent;
             color: var(--text-dim);
             font-family: 'DM Sans', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.3px;
+            font-size: 0.75rem; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
         }
 
-        .tone-btn:hover { border-color: var(--text-dim); color: var(--text); }
+        .tone-chip:hover { color: var(--text); border-color: var(--text-mid); }
+        .tone-chip.sel-neutral { background:rgba(148,163,184,0.1); border-color:#94a3b8; color:#cbd5e1; }
+        .tone-chip.sel-formal  { background:rgba(96,165,250,0.1);  border-color:#60a5fa; color:#93c5fd; }
+        .tone-chip.sel-casual  { background:rgba(251,146,60,0.1);  border-color:#fb923c; color:#fdba74; }
 
-        .tone-btn.active-formal  { background: rgba(79,195,247,0.1);  border-color: var(--formal);  color: var(--formal); }
-        .tone-btn.active-casual  { background: rgba(255,138,101,0.1); border-color: var(--casual);  color: var(--casual); }
-        .tone-btn.active-neutral { background: rgba(165,214,167,0.1); border-color: var(--neutral); color: var(--neutral); }
-
-        .tone-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-        }
-        .tone-btn.active-formal  .tone-dot { background: var(--formal); }
-        .tone-btn.active-casual  .tone-dot { background: var(--casual); }
-        .tone-btn.active-neutral .tone-dot { background: var(--neutral); }
-        .tone-btn:not([class*="active"]) .tone-dot { background: var(--text-dim); }
-
-        .submit-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
+        .analyze-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px;
             background: linear-gradient(135deg, var(--accent), #9b6aff);
-            border: none;
-            border-radius: 30px;
-            color: white;
+            border: none; border-radius: 30px; color: white;
             font-family: 'Syne', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 16px rgba(124,106,255,0.3);
+            font-size: 0.82rem; font-weight: 700; letter-spacing: 0.3px;
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 18px rgba(124,106,255,0.3);
         }
 
-        .submit-btn:hover {
+        .analyze-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 24px rgba(124,106,255,0.45);
+            box-shadow: 0 6px 28px rgba(124,106,255,0.45);
         }
 
-        .submit-btn:active { transform: translateY(0); }
+        .result-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+            animation: fadeUp 0.3s ease;
+        }
 
-        .submit-btn svg { width: 14px; height: 14px; }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
 
-        /* Hidden input */
+        .result-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .result-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem; font-weight: 600;
+            letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-mid);
+        }
+
+        .result-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .result-body { padding: 20px; }
+
+        /* Paraphrase */
+        .paraphrase-output { font-size: 0.97rem; line-height: 1.75; color: var(--text); }
+
+        .tone-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.68rem; font-weight: 600;
+            letter-spacing: 0.5px; text-transform: uppercase; margin-top: 12px;
+        }
+
+        .badge-neutral { background:rgba(148,163,184,0.1); border:1px solid rgba(148,163,184,0.25); color:#94a3b8; }
+        .badge-formal  { background:rgba(96,165,250,0.1);  border:1px solid rgba(96,165,250,0.25);  color:#60a5fa; }
+        .badge-casual  { background:rgba(251,146,60,0.1);  border:1px solid rgba(251,146,60,0.25);  color:#fb923c; }
+
+        /* Sentiment */
+        .sentiment-big { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+        .sentiment-emoji { font-size: 3rem; line-height: 1; }
+
+        .sentiment-info h2 {
+            font-family: 'Syne', sans-serif; font-size: 1.6rem;
+            font-weight: 800; text-transform: capitalize;
+        }
+
+        .sentiment-info p { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
+
+        .conf-bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+        .conf-label {
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; color: var(--text-dim);
+        }
+
+        .conf-bar {
+            height: 6px; background: var(--surface2);
+            border-radius: 3px; overflow: hidden;
+        }
+
+        .conf-fill { height: 100%; border-radius: 3px; }
+        .accuracy-note { margin-top: 14px; font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+
+        /* Features */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+
+        .stat-box .num { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--teal); }
+        .stat-box .lbl { font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .kw-section h4 {
+            font-size: 0.72rem; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-dim); margin-bottom: 10px;
+        }
+
+        .kw-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+        .kw-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 12px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 20px; font-size: 0.78rem; color: var(--text-mid);
+        }
+
+        .kw-chip .score { font-size: 0.65rem; color: var(--teal); font-weight: 600; }
+
+        .bow-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr));
+            gap: 8px; margin-top: 14px;
+        }
+
+        .bow-item { background: var(--surface2); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; }
+        .bow-item .word { color: var(--text-mid); }
+        .bow-item .freq { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--teal); }
+
+        /* NER */
+        .entity-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .entity-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--surface2); border-radius: 10px; border: 1px solid var(--border);
+            animation: fadeUp 0.2s ease both;
+        }
+
+        .entity-left { display: flex; align-items: center; gap: 10px; }
+        .entity-emoji { font-size: 1.2rem; }
+        .entity-name { font-weight: 500; font-size: 0.92rem; }
+
+        .entity-type {
+            font-size: 0.7rem; padding: 3px 9px;
+            border-radius: 20px; font-weight: 600; letter-spacing: 0.5px;
+        }
+
+        .no-entities { text-align: center; padding: 30px; color: var(--text-dim); font-size: 0.85rem; }
+
+        /* Topics */
+        .top-topic {
+            display: flex; align-items: center; gap: 16px;
+            padding: 18px; background: var(--surface2);
+            border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px;
+        }
+
+        .topic-emoji-big { font-size: 2.5rem; }
+
+        .top-topic-info h2 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
+        .top-topic-info p { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+
+        .topic-bars { display: flex; flex-direction: column; gap: 10px; }
+
+        .topic-bar-row {
+            display: grid; grid-template-columns: 160px 1fr 36px;
+            align-items: center; gap: 10px;
+        }
+
+        .topic-name { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-mid); }
+        .topic-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+        .topic-fill { height: 100%; border-radius: 3px; }
+        .topic-pct { font-size: 0.75rem; font-weight: 600; color: var(--text-mid); text-align: right; }
+
         input[type="hidden"] { display: none; }
 
-        /* ── Footer ── */
         footer {
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            padding: 12px 24px 32px;
-            text-align: center;
-            position: relative;
-            z-index: 1;
-            opacity: 0.5;
+            position: relative; z-index: 2;
+            text-align: center; padding: 12px;
+            font-size: 0.7rem; color: var(--text-dim); opacity: 0.4;
+        }
+
+        @media (max-width: 700px) {
+            .layout { grid-template-columns: 1fr; padding: 16px; }
+            .sidebar { flex-direction: row; flex-wrap: wrap; position: static; }
+            .tab-btn { width: auto; }
+            header { padding: 20px 16px 0; }
+            .stats-row { grid-template-columns: repeat(2,1fr); }
+            .topic-bar-row { grid-template-columns: 100px 1fr 32px; }
         }
     </style>
 </head>
 <body>
 
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
 <header>
-    <div class="logo">
-        <div class="logo-icon">✦</div>
-        <h1>ParaBot</h1>
+    <div class="logo-mark">✦</div>
+    <div class="logo-text">
+        <h1>NLP Lab</h1>
+        <p>AI-Powered Text Analysis</p>
     </div>
-    <p class="tagline">Intelligent paraphrasing with tone control</p>
 </header>
 
-<main>
-    <!-- Chat window -->
-    <div class="chat-window" id="chatWindow">
-        {% if user_text %}
-            <div class="message user">
-                <span class="msg-label">You</span>
-                <div class="bubble">{{ user_text }}</div>
-            </div>
-            <div class="message bot">
-                <span class="msg-label">ParaBot</span>
-                <div class="bubble">{{ result }}</div>
-                <span class="tone-badge {{ tone }}">
-                    {% if tone == 'formal' %}🎩{% elif tone == 'casual' %}😎{% else %}⚖️{% endif %}
-                    {{ tone | capitalize }} tone
-                </span>
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <div class="icon">✦</div>
-                <p>Type something below and ParaBot will rephrase it for you.</p>
-            </div>
-        {% endif %}
-    </div>
+<div class="layout">
 
-    <!-- Input area -->
-    <form method="POST" id="paraForm">
-        <div class="input-area">
-            <textarea
-                name="text"
-                id="textInput"
-                placeholder="Enter a sentence or paragraph to paraphrase…"
-                rows="3"
-            >{{ user_text if user_text else '' }}</textarea>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <p class="sidebar-label">Modules</p>
+        {% set tabs = [
+            ('paraphrase', '✦', 'Paraphraser'),
+            ('sentiment',  '◉', 'Sentiment'),
+            ('features',   '⊞', 'TF-IDF / BoW'),
+            ('ner',        '◈', 'NER'),
+            ('topics',     '◎', 'Topic Model'),
+        ] %}
+        {% for tab_id, icon, label in tabs %}
+        <button type="button" class="tab-btn {% if active_tab == tab_id %}active{% endif %}"
+                data-tab="{{ tab_id }}" onclick="switchTab('{{ tab_id }}')">
+            <span class="tab-icon">{{ icon }}</span>
+            {{ label }}
+        </button>
+        {% endfor %}
+    </nav>
 
-            <div class="controls-row">
-                <!-- Tone selector -->
-                <div class="tone-selector">
-                    <button type="button" class="tone-btn {% if tone == 'neutral' %}active-neutral{% endif %}" onclick="setTone('neutral')">
-                        <span class="tone-dot"></span> Neutral
-                    </button>
-                    <button type="button" class="tone-btn {% if tone == 'formal' %}active-formal{% endif %}" onclick="setTone('formal')">
-                        <span class="tone-dot"></span> Formal
-                    </button>
-                    <button type="button" class="tone-btn {% if tone == 'casual' %}active-casual{% endif %}" onclick="setTone('casual')">
-                        <span class="tone-dot"></span> Casual
-                    </button>
+    <!-- Panel -->
+    <div class="panel">
+
+        <form method="POST" id="nlpForm">
+            <input type="hidden" name="active_tab" id="activeTabInput" value="{{ active_tab }}">
+            <input type="hidden" name="tone" id="toneInput" value="{{ results.paraphrase.tone if results.paraphrase else 'neutral' }}">
+
+            <div class="input-card">
+                <div class="input-header">
+                    <span class="input-label">Input Text</span>
+                    <span class="char-count" id="charCount">0 chars</span>
                 </div>
 
-                <!-- Hidden tone input -->
-                <input type="hidden" name="tone" id="toneInput" value="{{ tone }}">
+                <textarea name="text" id="textInput"
+                    placeholder="Type or paste your text here…" rows="3">{{ text }}</textarea>
 
-                <!-- Submit -->
-                <button type="submit" class="submit-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 19V5M5 12l7-7 7 7"/>
-                    </svg>
-                    Rewrite
-                </button>
+                <div class="input-footer">
+                    <div class="tone-row" id="toneRow"
+                         style="display: {% if active_tab == 'paraphrase' %}flex{% else %}none{% endif %}">
+                        {% set cur_tone = results.paraphrase.tone if results.paraphrase else 'neutral' %}
+                        <button type="button" class="tone-chip {% if cur_tone == 'neutral' %}sel-neutral{% endif %}" onclick="setTone('neutral')">⚖️ Neutral</button>
+                        <button type="button" class="tone-chip {% if cur_tone == 'formal'  %}sel-formal{% endif %}"  onclick="setTone('formal')">🎩 Formal</button>
+                        <button type="button" class="tone-chip {% if cur_tone == 'casual'  %}sel-casual{% endif %}"  onclick="setTone('casual')">😎 Casual</button>
+                    </div>
+                    <div style="flex:1"></div>
+                    <button type="submit" class="analyze-btn">
+                        <span id="btnLabel">
+                            {% if active_tab == 'paraphrase' %}✦ Rewrite
+                            {% elif active_tab == 'sentiment' %}◉ Analyze
+                            {% elif active_tab == 'features'  %}⊞ Extract
+                            {% elif active_tab == 'ner'       %}◈ Find Entities
+                            {% else %}◎ Model Topics{% endif %}
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Results -->
+        {% if text and results %}
+
+        {% if active_tab == 'paraphrase' and results.paraphrase %}
+        {% set r = results.paraphrase %}
+        <div class="result-card">
+            <div class="result-header">
+                <span class="result-title"><span class="result-dot" style="background:#7c6aff"></span>Paraphrased Output</span>
+            </div>
+            <div class="result-body">
+                <p class="paraphrase-output">{{ r.output }}</p>
+                <span class="tone-badge badge-{{ r.tone }}">
+                    {% if r.tone == 'formal' %}🎩{% elif r.tone == 'casual' %}😎{% else %}⚖️{% endif %}
+                    {{ r.tone | capitalize }} Tone
+                </span>
             </div>
         </div>
-    </form>
-</main>
+        {% endif %}
 
-<footer>Powered by NLTK · WordNet · Flask</footer>
+        {% if active_tab == 'sentiment' and results.sentiment %}
+        {% set s = results.sentiment %}
+        <div class="result-card">
+            <div class="result-header">
+                <span class="result-title"><span class="result-dot" style="background:#fbbf24"></span>Sentiment Analysis</span>
+                <span style="font-size:0.7rem;color:var(--text-dim)">Naive Bayes</span>
+            </div>
+            <div class="result-body">
+                <div class="sentiment-big">
+                    <div class="sentiment-emoji">{{ s.emoji }}</div>
+                    <div class="sentiment-info">
+                        <h2 style="color:{{ s.color }}">{{ s.label | capitalize }}</h2>
+                        <p>Predicted sentiment of the input</p>
+                    </div>
+                </div>
+                <div class="conf-bar-wrap">
+                    <div class="conf-label">
+                        <span>Confidence</span>
+                        <span style="color:{{ s.color }};font-weight:600">{{ s.confidence }}%</span>
+                    </div>
+                    <div class="conf-bar">
+                        <div class="conf-fill" style="width:{{ s.confidence }}%;background:{{ s.color }}"></div>
+                    </div>
+                </div>
+                <div class="accuracy-note">
+                    <span style="color:var(--teal)">◉</span>
+                    Model trained on 52 samples · Test accuracy: {{ s.model_accuracy }}%
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if active_tab == 'features' and results.features %}
+        {% set f = results.features %}
+        <div class="result-card">
+            <div class="result-header">
+                <span class="result-title"><span class="result-dot" style="background:#2dd4bf"></span>TF-IDF · Bag of Words</span>
+            </div>
+            <div class="result-body">
+                <div class="stats-row">
+                    <div class="stat-box"><div class="num">{{ f.token_count }}</div><div class="lbl">Tokens</div></div>
+                    <div class="stat-box"><div class="num">{{ f.unique_tokens }}</div><div class="lbl">Unique</div></div>
+                    <div class="stat-box"><div class="num">{{ f.top_keywords | length }}</div><div class="lbl">Keywords</div></div>
+                </div>
+                <div class="kw-section">
+                    <h4>Top Keywords by TF-IDF Score</h4>
+                    <div class="kw-chips">
+                        {% for word, score in f.tfidf.items() %}{% if loop.index <= 8 %}
+                        <div class="kw-chip"><span>{{ word }}</span><span class="score">{{ score }}</span></div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
+                <div class="kw-section" style="margin-top:18px">
+                    <h4>Bag of Words Frequency</h4>
+                    <div class="bow-grid">
+                        {% for word, freq in f.bow.items() %}{% if loop.index <= 10 %}
+                        <div class="bow-item"><div class="freq">{{ freq }}×</div><div class="word">{{ word }}</div></div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if active_tab == 'ner' and results.ner %}
+        {% set n = results.ner %}
+        <div class="result-card">
+            <div class="result-header">
+                <span class="result-title"><span class="result-dot" style="background:#ff6a9b"></span>Named Entity Recognition</span>
+                <span style="font-size:0.7rem;color:var(--text-dim)">{{ n.count }} entities found</span>
+            </div>
+            <div class="result-body">
+                {% if n.entities %}
+                <div class="entity-list">
+                    {% for e in n.entities %}
+                    <div class="entity-row" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+                        <div class="entity-left">
+                            <span class="entity-emoji">{{ e.emoji }}</span>
+                            <span class="entity-name">{{ e.name }}</span>
+                        </div>
+                        <span class="entity-type" style="background:{{ e.color }}22;color:{{ e.color }};border:1px solid {{ e.color }}44">
+                            {{ e.label }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-entities">
+                    <div style="font-size:2rem;margin-bottom:8px">◈</div>
+                    <p>No named entities detected.</p>
+                    <p style="margin-top:4px;font-size:0.75rem">Try text with person names, places, or organizations.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if active_tab == 'topics' and results.topics %}
+        {% set t = results.topics %}
+        <div class="result-card">
+            <div class="result-header">
+                <span class="result-title"><span class="result-dot" style="background:#4ade80"></span>Topic Modeling</span>
+                <span style="font-size:0.7rem;color:var(--text-dim)">LDA-style</span>
+            </div>
+            <div class="result-body">
+                {% if t.top_topic %}
+                <div class="top-topic" style="border-color:{{ t.top_topic.color }}33">
+                    <span class="topic-emoji-big">{{ t.top_topic.emoji }}</span>
+                    <div class="top-topic-info">
+                        <h2 style="color:{{ t.top_topic.color }}">{{ t.top_topic.name }}</h2>
+                        <p>Dominant topic detected</p>
+                    </div>
+                </div>
+                {% if t.topics %}
+                <div class="topic-bars">
+                    {% for topic in t.topics %}
+                    <div class="topic-bar-row">
+                        <div class="topic-name"><span>{{ topic.emoji }}</span><span>{{ topic.name }}</span></div>
+                        <div class="topic-track"><div class="topic-fill" style="width:{{ topic.percent }}%;background:{{ topic.color }}"></div></div>
+                        <span class="topic-pct">{{ topic.percent }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if t.keywords_found %}
+                <div class="kw-section" style="margin-top:18px">
+                    <h4>Matched Keywords</h4>
+                    <div class="kw-chips">
+                        {% for kw in t.keywords_found %}
+                        <div class="kw-chip">{{ kw }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="no-entities">
+                    <p>Could not determine a topic. Try longer sentences about technology, health, business, environment, or education.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+
+    </div>
+</div>
+
+<footer>NLP Lab · NLTK · WordNet · Flask · Naive Bayes · TF-IDF · NER · LDA</footer>
 
 <script>
-    // Tone selection
+    const BTN_LABELS = {
+        paraphrase: '✦ Rewrite',
+        sentiment:  '◉ Analyze',
+        features:   '⊞ Extract',
+        ner:        '◈ Find Entities',
+        topics:     '◎ Model Topics',
+    };
+
+    function switchTab(tabId) {
+        document.getElementById('activeTabInput').value = tabId;
+        document.getElementById('btnLabel').textContent = BTN_LABELS[tabId];
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+        document.getElementById('toneRow').style.display = tabId === 'paraphrase' ? 'flex' : 'none';
+    }
+
     function setTone(tone) {
         document.getElementById('toneInput').value = tone;
-        const buttons = document.querySelectorAll('.tone-btn');
-        buttons.forEach(btn => {
-            btn.className = 'tone-btn';
-        });
-        const active = event.currentTarget;
-        active.classList.add(`active-${tone}`);
+        document.querySelectorAll('.tone-chip').forEach(c => c.className = 'tone-chip');
+        event.currentTarget.classList.add(`sel-${tone}`);
     }
 
-    // Auto scroll chat to bottom
-    const chatWindow = document.getElementById('chatWindow');
-    if (chatWindow) {
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    // Textarea auto-resize
     const textarea = document.getElementById('textInput');
-    textarea.addEventListener('input', function () {
+    const charCount = document.getElementById('charCount');
+
+    function updateCount() {
+        const n = textarea.value.length;
+        charCount.textContent = n + ' char' + (n !== 1 ? 's' : '');
+    }
+
+    textarea.addEventListener('input', function() {
+        updateCount();
         this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        this.style.height = Math.min(this.scrollHeight, 220) + 'px';
     });
 
-    // Submit with Ctrl+Enter
+    updateCount();
+
     textarea.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            document.getElementById('paraForm').submit();
+            document.getElementById('nlpForm').submit();
         }
     });
 </script>
-
 </body>
 </html>
