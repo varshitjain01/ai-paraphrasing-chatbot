@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Paraphrasing Chatbot</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f2f5;
+            text-align: center;
+        }
+
+        .chatbox {
+            width: 60%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            height: 400px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .user {
+            color: blue;
+            margin: 10px 0;
+        }
+
+        .bot {
+            color: green;
+            margin: 10px 0;
+        }
+
+        textarea {
+            width: 60%;
+            height: 80px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>AI Paraphrasing Chatbot</h2>
+
+<div class="chatbox">
+    {% if user_text %}
+        <div class="user"><b>You:</b> {{ user_text }}</div>
+        <div class="bot"><b>Bot:</b> {{ result }}</div>
+    {% endif %}
+</div>
+
+<form method="POST">
+    <textarea name="text" placeholder="Enter your sentence..."></textarea><br>
+    <button type="submit">Rewrite</button>
+</form>
+
+</body>
+</html>
